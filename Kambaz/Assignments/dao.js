@@ -1,21 +1,23 @@
-import db from "../Database/index.js";
+import model from "./model.js";
 import { v4 as uuidv4 } from "uuid";
 
-export const findAssignmentsForCourse = (cid) => db.assignments.filter(a => a.course === cid);
+/* ────────────── R E A D ────────────── */
+export const findAssignmentsForCourse = (cid) =>
+  model.find({ course: cid });
 
+/* ───────────── C R E A T E ─────────── */
 export const createAssignment = (a) => {
-  const assignment = { ...a, _id: uuidv4() };
-  db.assignments = [...db.assignments, assignment];
-  return assignment;
+  const doc = { ...a };
+  delete doc._id;
+  doc._id = uuidv4();
+  doc.points = Number(doc.points ?? 0);
+  return model.create(doc);
 };
 
-export const updateAssignment = (aid, updates) => {
-  const a = db.assignments.find(x => x._id === aid);
-  Object.assign(a, updates);
-  return 204;
-};
+/* ───────────── U P D A T E ─────────── */
+export const updateAssignment = (aid, updates) =>
+  model.updateOne({ _id: aid }, { $set: updates });
 
-export const deleteAssignment = (aid) => {
-  db.assignments = db.assignments.filter(a => a._id !== aid);
-  return 204;
-};
+/* ───────────── D E L E T E ─────────── */
+export const deleteAssignment = (aid) =>
+  model.deleteOne({ _id: aid });

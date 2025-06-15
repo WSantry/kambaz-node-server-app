@@ -1,33 +1,17 @@
-import db from "../Database/index.js";
+import model from "./model.js";
 import { v4 as uuidv4 } from "uuid";
 
-/* ---------- READ ---------------------------------------- */
-export const findAllCourses             = ()      => db.courses;
+/* ─────────── R E A D ─────────────────── */
+export const findAllCourses = () => model.find();
 
-export const findCoursesForEnrolledUser = (uid) =>
-  db.courses.filter(c =>
-    db.enrollments.some(e => e.user === uid && e.course === c._id)
-  );
-
-/* ---------- CREATE -------------------------------------- */
+/* ─────────── C R E A T E ─────────────── */
 export const createCourse = (course) => {
-  const c = { ...course, _id: uuidv4() };
-  db.courses = [...db.courses, c];
-  return c;
+  const doc = { ...course };
+  delete doc._id;
+  doc._id = doc._id ?? uuidv4();
+  return model.create(doc);
 };
 
-/* ---------- DELETE -------------------------------------- */
-export const deleteCourse = (cid) => {
-  db.courses      = db.courses.filter(c => c._id !== cid);
-  db.enrollments  = db.enrollments.filter(e => e.course !== cid);
-  return 204;
-};
-
-/* ---------- UPDATE (fixed) ------------------------------- */
-export const updateCourse = (cid, updates) => {
-  // search the live array (no destructuring snapshot)
-  const course = db.courses.find(c => c._id === cid);
-  if (!course) return 404;         // id not found → graceful 404
-  Object.assign(course, updates);  // mutate in place
-  return 204;
-};
+/* ─────────── U P D A T E / D E L E T E ─ */
+export const deleteCourse = (cid)            => model.deleteOne({ _id:cid });
+export const updateCourse = (cid,updates)    => model.updateOne({ _id:cid },{ $set:updates });

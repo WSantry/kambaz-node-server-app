@@ -1,13 +1,20 @@
-import db from "../Database/index.js";
-import { v4 as uuidv4 } from "uuid";
+import model from "./model.js";
 
-export const enrollUserInCourse = (uid, cid) =>
-  db.enrollments.push({ _id: uuidv4(), user: uid, course: cid });
-
-export const unenrollUserFromCourse = (uid, cid) => {
-  db.enrollments = db.enrollments.filter(e => !(e.user === uid && e.course === cid));
-  return 204;
+export const findCoursesForUser = async (uid)=>{
+  const e = await model.find({ user:uid }).populate("course");
+  return e.map(x=>x.course);
 };
 
-export const findEnrollmentsForUser = (uid) =>
-  db.enrollments.filter(e => e.user === uid);
+export const findUsersForCourse = async (cid)=>{
+  const e = await model.find({ course:cid }).populate("user");
+  return e.map(x=>x.user);
+};
+
+export const enrollUserInCourse   = (uid,cid)=>
+  model.create({ _id:`${uid}-${cid}`, user:uid, course:cid });
+
+export const unenrollUserFromCourse = (uid,cid)=>
+  model.deleteOne({ user:uid, course:cid });
+
+export const findEnrollmentsForUser = (uid)=>
+  model.find({ user:uid });
