@@ -7,6 +7,6 @@ const schema = new mongoose.Schema(
     course:     { type:String, ref:"CourseModel" },
     lessons:    { type:Array,  default:[] }
   },
-  { collection:"modules" }
+  { collection:"modules", versionKey: false }
 );
 export default schema;

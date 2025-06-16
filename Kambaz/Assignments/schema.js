@@ -5,6 +5,7 @@ const schema = new mongoose.Schema(
   {
     _id:             String,
     title:           String,
+    course:          { type:String, ref:"CourseModel" },
     description:     String,
     points:          Number,
     assignmentGroup: String,
@@ -13,10 +14,9 @@ const schema = new mongoose.Schema(
     assignTo:        String,
     availableDate:   String,
     untilDate:       String,
-    dueDate:         String,
-    course:          { type:String, ref:"CourseModel" }
+    dueDate:         String
   },
-  { collection: "assignments" }
+  { collection: "assignments", versionKey: false }
 );
 
 export default schema;

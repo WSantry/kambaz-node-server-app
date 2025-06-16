@@ -13,6 +13,6 @@ const schema = new mongoose.Schema(
       default:"ENROLLED"
     }
   },
-  { collection:"enrollments" }
+  { collection:"enrollments", versionKey: false }
 );
 export default schema;

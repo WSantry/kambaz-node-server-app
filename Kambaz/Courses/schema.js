@@ -12,7 +12,7 @@ const courseSchema = new mongoose.Schema(
     department: String,
     author:     String
   },
-  { collection:"courses" }
+  { collection:"courses", versionKey: false }
 );
 
 export default courseSchema;
