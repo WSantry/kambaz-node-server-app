@@ -1,6 +1,6 @@
-import * as dao          from "./dao.js";
-import * as courseDao    from "../Courses/dao.js";
-import * as enrollDao    from "../Enrollments/dao.js";
+import * as dao        from "./dao.js";
+import * as courseDao  from "../Courses/dao.js";
+import * as enrollDao  from "../Enrollments/dao.js";
 
 export default function UserRoutes(app) {
   /* ────────────────────── helpers ────────────────────── */
@@ -50,17 +50,26 @@ export default function UserRoutes(app) {
     if (req.session.currentUser && req.session.currentUser._id === userId) {
       req.session.currentUser = { ...req.session.currentUser, ...req.body };
     }
-    res.json(req.session.currentUser ?? (await dao.findUserById(userId)));
+    res.json(
+      req.session.currentUser ?? (await dao.findUserById(userId))
+    );
   };
 
-  const deleteUser = async (req, res) =>
-    res.json(await dao.deleteUser(req.params.userId));
+  /* ---------  ★  delete user + cascade delete enrollments  ★ --------- */
+  const deleteUser = async (req, res) => {
+    const { userId } = req.params;
+    await enrollDao.deleteEnrollmentsForUser(userId);  // ← NEW
+    const status = await dao.deleteUser(userId);
+    res.json(status);
+  };
 
   /* ─────────────────── session / auth ────────────────── */
 
   const signup = async (req, res) => {
     if (await dao.findUserByUsername(req.body.username)) {
-      return res.status(400).json({ message: "Username already taken" });
+      return res
+        .status(400)
+        .json({ message: "Username already taken" });
     }
     const currentUser = await dao.createUser(req.body);
     req.session.currentUser = currentUser;
@@ -69,18 +78,28 @@ export default function UserRoutes(app) {
 
   const signin = async (req, res) => {
     const { username, password } = req.body;
-    const currentUser = await dao.findUserByCredentials(username, password);
+    const currentUser = await dao.findUserByCredentials(
+      username,
+      password
+    );
     if (!currentUser) {
-      return res.status(401).json({ message: "Unable to login. Try again later." });
+      return res
+        .status(401)
+        .json({ message: "Unable to login. Try again later." });
     }
     req.session.currentUser = currentUser;
     res.json(currentUser);
   };
 
   const profile = async (req, res) =>
-    req.session.currentUser ? res.json(req.session.currentUser) : res.sendStatus(401);
+    req.session.currentUser
+      ? res.json(req.session.currentUser)
+      : res.sendStatus(401);
 
-  const signout = (req, res) => { req.session.destroy(); res.sendStatus(200); };
+  const signout = (req, res) => {
+    req.session.destroy();
+    res.sendStatus(200);
+  };
 
   /* ───────────── courses / enrollments ───────────── */
 
@@ -98,7 +117,7 @@ export default function UserRoutes(app) {
     res.json(await courseDao.findCoursesForEnrolledUser(uid));
   };
 
-  /** author (current user) creates a course and auto-enrolls */
+  /** author (current user) creates a course and auto-enrols */
   const createCourse = async (req, res) => {
     const currentUser = req.session.currentUser;
     if (!currentUser) return res.sendStatus(401);
@@ -108,18 +127,18 @@ export default function UserRoutes(app) {
     res.json(newCourse);
   };
 
-  /** NEW: return users’ single course (used by dashboard after toggle) */
+  /** single course for user (dashboard helper) */
   const findCourseForUser = async (req, res) => {
     const uid = resolveUid(req, res);
     if (!uid) return;
 
     const { cid } = req.params;
     const courses = await courseDao.findCoursesForEnrolledUser(uid);
-    const course  = courses.find(c => c._id === cid);
+    const course  = courses.find((c) => c._id === cid);
     course ? res.json(course) : res.sendStatus(404);
   };
 
-  /** NEW: enroll / unenroll current or specific user */
+  /** enroll / unenroll */
   const enrollUserInCourse = async (req, res) => {
     const uid = resolveUid(req, res);
     if (!uid) return;
@@ -134,7 +153,7 @@ export default function UserRoutes(app) {
     res.sendStatus(200);
   };
 
-  /** list enrollments (raw) */
+  /** raw enrollments list */
   const findMyEnrollments = async (req, res) => {
     const uid = resolveUid(req, res);
     if (!uid) return;
@@ -147,18 +166,18 @@ export default function UserRoutes(app) {
   app.get  ("/api/users",                     findAllUsers);
   app.get  ("/api/users/:userId",             findUserById);
   app.put  ("/api/users/:userId",             updateUser);
-  app.delete("/api/users/:userId",            deleteUser);
+  app.delete("/api/users/:userId",            deleteUser);           // ★ uses new cascade logic
 
   app.post ("/api/users/signup",              signup);
   app.post ("/api/users/signin",              signin);
   app.post ("/api/users/profile",             profile);
   app.post ("/api/users/signout",             signout);
 
-  app.get  ("/api/users/:uid/courses/:cid",   findCourseForUser);   // ← NEW
+  app.get  ("/api/users/:uid/courses/:cid",   findCourseForUser);
   app.get  ("/api/users/:uid/courses",        findMyCourses);
   app.post ("/api/users/current/courses",     createCourse);
 
-  app.post ("/api/users/:uid/courses/:cid",   enrollUserInCourse);  // ← NEW
+  app.post ("/api/users/:uid/courses/:cid",   enrollUserInCourse);
   app.delete("/api/users/:uid/courses/:cid",  unenrollUserFromCourse);
 
   app.get  ("/api/users/:uid/enrollments",    findMyEnrollments);

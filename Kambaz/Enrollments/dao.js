@@ -18,3 +18,10 @@ export const unenrollUserFromCourse = (uid,cid)=>
 
 export const findEnrollmentsForUser = (uid)=>
   model.find({ user:uid });
+
+// Cleanup Enrollments on deleting Course/User
+export const deleteEnrollmentsForCourse = (courseId) =>
+  model.deleteMany({ course: courseId });
+
+export const deleteEnrollmentsForUser = (userId) =>
+  model.deleteMany({ user: userId });
