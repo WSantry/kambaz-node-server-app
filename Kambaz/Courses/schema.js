@@ -6,11 +6,7 @@ const courseSchema = new mongoose.Schema(
     name:       String,
     number:     String,
     credits:    Number,
-    description:String,
-    startDate:  String,
-    endDate:    String,
-    department: String,
-    author:     String
+    description:String
   },
   { collection:"courses", versionKey: false }
 );

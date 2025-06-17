@@ -9,7 +9,7 @@ export const findAssignmentsForCourse = (cid) =>
 export const createAssignment = (a) => {
   const doc = { ...a };
   delete doc._id;
-  doc._id = uuidv4();
+  doc._id   = uuidv4();
   doc.points = Number(doc.points ?? 0);
   return model.create(doc);
 };
@@ -19,5 +19,9 @@ export const updateAssignment = (aid, updates) =>
   model.updateOne({ _id: aid }, { $set: updates });
 
 /* ───────────── D E L E T E ─────────── */
-export const deleteAssignment = (aid) =>
+export const deleteAssignment           = (aid)   =>
   model.deleteOne({ _id: aid });
+
+/* NEW → cascade helper: remove *all* assignments for a course */
+export const deleteAssignmentsForCourse = (cid)   =>
+  model.deleteMany({ course: cid });

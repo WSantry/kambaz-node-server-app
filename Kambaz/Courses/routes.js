@@ -1,16 +1,15 @@
-import * as dao         from "./dao.js";
-import * as modulesDao  from "../Modules/dao.js";
-import * as enrollDao   from "../Enrollments/dao.js";
+import * as dao            from "./dao.js";
+import * as modulesDao     from "../Modules/dao.js";
+import * as assignmentsDao from "../Assignments/dao.js";
+import * as enrollDao      from "../Enrollments/dao.js";
 
 export default function CourseRoutes(app) {
   /* ────────────────────────────  COURSES  ─────────────────────────── */
 
-  // Get every course
   app.get("/api/courses", async (_req, res) =>
     res.json(await dao.findAllCourses())
   );
 
-  // Create course and auto-enroll the author (if logged-in)
   app.post("/api/courses", async (req, res) => {
     const course   = await dao.createCourse(req.body);
     const current  = req.session.currentUser;
@@ -18,15 +17,21 @@ export default function CourseRoutes(app) {
     res.json(course);
   });
 
-  // DELETE course  ➜  also remove its enrollments  ⟶  return status
+  /* DELETE course ➜ cascade-delete enrollments, modules, assignments */
   app.delete("/api/courses/:courseId", async (req, res) => {
     const { courseId } = req.params;
-    await enrollDao.deleteEnrollmentsForCourse(courseId);   // NEW  ★
+
+    await Promise.all([
+      enrollDao.deleteEnrollmentsForCourse(courseId),
+      modulesDao.deleteModulesForCourse(courseId),
+      assignmentsDao.deleteAssignmentsForCourse(courseId),
+    ]);
+
     const status = await dao.deleteCourse(courseId);
-    res.json(status);                                       // keep same payload shape
+    res.json(status);            // keep same payload shape
   });
 
-  // Update course
+  /* UPDATE course */
   app.put("/api/courses/:courseId", async (req, res) =>
     res.json(await dao.updateCourse(req.params.courseId, req.body))
   );
